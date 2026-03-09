@@ -72,7 +72,7 @@ def validate_services(data: dict[str, Any]):
         is_valid = False
         return (is_valid, REQUIRED_FIELDS)
 
-    missing_fields = [key for key in data.keys() if key not in REQUIRED_FIELDS]
+    missing_fields = [ key for key in REQUIRED_FIELDS if key not in data ]
 
     if missing_fields:
         is_valid = True
