@@ -1,0 +1,7 @@
+name: notification-service
+language: java
+port: 7070
+dependencies:
+  - postgres
+tags:
+  - non-critical

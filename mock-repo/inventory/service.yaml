@@ -1,0 +1,9 @@
+name: payment-service
+team: inventory
+language: java
+version: "3.0.1"
+port: 6060
+dependencies:
+  - postgres
+tags:
+  - internal
