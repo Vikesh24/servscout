@@ -47,12 +47,12 @@ def parse_service_files(file: Path):
     Returns:
         The parsed data from the YAML
     """
-    with open(file, "r") as f:
-        try:
+    try:
+        with open(file.as_posix(), "r") as f:
             data = yaml.safe_load(f)
-            return data
-        except yaml.YAMLError as e:
-            print("Error in the file", e)
+            return data, None
+    except yaml.YAMLError as e:
+        return (None, f"Invalid YAML syntax: {e}")
 
 
 def validate_services(data: dict[str, Any]):
@@ -98,25 +98,32 @@ def build_report(services):
     }
 
     for service_file in services:
-        data = parse_service_files(service_file)
-        is_valid, missing_fields = validate_services(data=data)
-
-        report["summary"]["total_scanned"] = (
-            report["summary"].get("total_scanned", 0) + 1
-        )
-
-        if is_valid:
-            status = "valid"
-            report["summary"]["total_valid"] = (
-                report["summary"].get("total_valid", 0) + 1
-            )
-        else:
+        data, parse_error = parse_service_files(service_file)
+        if parse_error:
             status = "invalid"
             report["summary"]["total_with_errors"] = (
                 report["summary"].get("total_with_errors", 0) + 1
             )
+            errors = parse_error
+        else:
+            is_valid, missing_fields = validate_services(data=data)
 
-        errors = [f"Missing required field {field}" for field in missing_fields]
+            report["summary"]["total_scanned"] = (
+                report["summary"].get("total_scanned", 0) + 1
+            )
+
+            if is_valid:
+                status = "valid"
+                report["summary"]["total_valid"] = (
+                    report["summary"].get("total_valid", 0) + 1
+                )
+            else:
+                status = "invalid"
+                report["summary"]["total_with_errors"] = (
+                    report["summary"].get("total_with_errors", 0) + 1
+                )
+
+            errors = [f"Missing required field {field}" for field in missing_fields]
 
         report["services"].append(
             {
@@ -179,12 +186,12 @@ def main():
 
     except NotADirectoryError as e:
         print(e)
-        sys.exit(10001)
+        sys.exit(1)
 
     report = build_report(services=services)
     write_report(report=report)
 
-    print(report)
+    print(report, file=sys.stderr)
 
 
 if __name__ == "__main__":
