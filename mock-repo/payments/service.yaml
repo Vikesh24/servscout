@@ -1,0 +1,11 @@
+name: payment-service
+team: payments
+language: python
+version: "2.1.0"
+port: 8080
+dependencies:
+  - postgres
+  - redis
+tags:
+  - critical
+  - pci-compliant

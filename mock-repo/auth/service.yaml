@@ -1,0 +1,9 @@
+name: auth-service
+team: platform
+language: go
+version: "1.0.4"
+port: 9090
+dependencies:
+  - redis
+tags:
+  - critical
