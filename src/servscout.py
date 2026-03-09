@@ -16,6 +16,7 @@ import yaml
 
 REQUIRED_FIELDS = ["name", "team", "language", "version"]
 
+
 def find_service_files(root_directory: str):
     """
     Recursively scan a directory and yield all service.yaml file paths.
@@ -72,7 +73,7 @@ def validate_services(data: dict[str, Any]):
         is_valid = False
         return (is_valid, REQUIRED_FIELDS)
 
-    missing_fields = [ key for key in REQUIRED_FIELDS if key not in data ]
+    missing_fields = [key for key in REQUIRED_FIELDS if key not in data]
 
     if missing_fields:
         is_valid = True
@@ -137,8 +138,17 @@ def write_report(report, output_path=Path(".")):
         report: A dict report of the services
         output_path: The path where the output should be written, defaults to current working director
     """
-    with open(output_path / "report.json", "w") as output_file:
-        json.dump(report, output_file, indent=4)
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    file_name = f"service_report_{timestamp}.json"
+    file_path = output_path / file_name
+
+    try:
+        with open(file_path, "w") as output_file:
+            json.dump(report, output_file, indent=4)
+        print(f"ServScout - Report written to {file_path}", file=sys.stderr)
+    except OSError as e:
+        print(f"ServScout - Failed to write to {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 # def traverse(path):
@@ -152,15 +162,15 @@ def main():
 
     parser = argparse.ArgumentParser(
         prog="servscout",
-        description="ServScout — Scouts and inventories all services across the monorepo."
+        description="ServScout — Scouts and inventories all services across the monorepo.",
     )
     parser.add_argument(
-        "path", 
-        help="FilePath where the service files are present"
+        "path", help="Root directory path to scan for service.yaml files"
     )
     parser.add_argument(
-        "--OUT", "-o",
-        help="File path where the report file has to written to."
+        "--out",
+        "-o",
+        help="Output path for the JSON report. Defaults to current working directory.",
     )
     args = parser.parse_args()
 
