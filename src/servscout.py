@@ -16,11 +16,6 @@ import yaml
 
 REQUIRED_FIELDS = ["name", "team", "language", "version"]
 
-parser = argparse.ArgumentParser()
-parser.add_argument("path", help="FilePath where the service files are present")
-args = parser.parse_args()
-
-
 def find_service_files(root_directory: str):
     """
     Recursively scan a directory and yield all service.yaml file paths.
@@ -154,6 +149,21 @@ def write_report(report, output_path=Path(".")):
 
 
 def main():
+
+    parser = argparse.ArgumentParser(
+        prog="servscout",
+        description="ServScout — Scouts and inventories all services across the monorepo."
+    )
+    parser.add_argument(
+        "path", 
+        help="FilePath where the service files are present"
+    )
+    parser.add_argument(
+        "--OUT", "-o",
+        help="File path where the report file has to written to."
+    )
+    args = parser.parse_args()
+
     try:
         services = find_service_files(args.path)
 
