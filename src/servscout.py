@@ -11,17 +11,13 @@ from datetime import datetime, timezone
 
 # import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Generator
 import yaml
 
 REQUIRED_FIELDS = ["name", "team", "language", "version"]
 
-parser = argparse.ArgumentParser()
-parser.add_argument("path", help="FilePath where the service files are present")
-args = parser.parse_args()
 
-
-def find_service_files(root_directory: str):
+def find_service_files(root_directory: str) -> Generator[Path, None, None]:
     """
     Recursively scan a directory and yield all service.yaml file paths.
 
@@ -41,7 +37,7 @@ def find_service_files(root_directory: str):
         )
 
 
-def parse_service_files(file: Path):
+def parse_service_files(file: Path) -> tuple[dict[str, Any] | None, None | str]:
     """
     Reads and Parses the service.yaml file
 
@@ -51,15 +47,15 @@ def parse_service_files(file: Path):
     Returns:
         The parsed data from the YAML
     """
-    with open(file, "r") as f:
-        try:
+    try:
+        with open(file, "r") as f:
             data = yaml.safe_load(f)
-            return data
-        except yaml.YAMLError as e:
-            print("Error in the file", e)
+            return data, None
+    except yaml.YAMLError as e:
+        return (None, f"Invalid YAML syntax: {e}")
 
 
-def validate_services(data: dict[str, Any]):
+def validate_services(data: dict[str, Any] | None) -> tuple[bool, list[str]]:
     """
     Validates the given parsed data
 
@@ -77,16 +73,16 @@ def validate_services(data: dict[str, Any]):
         is_valid = False
         return (is_valid, REQUIRED_FIELDS)
 
-    missing_fields = [key for key in data.keys() if key not in REQUIRED_FIELDS]
+    missing_fields = [key for key in REQUIRED_FIELDS if key not in data]
 
     if missing_fields:
-        is_valid = True
+        is_valid = False
         return (is_valid, missing_fields)
 
     return (is_valid, missing_fields)
 
 
-def build_report(services):
+def build_report(services: Generator[Path, None, None]) -> dict[str, Any]:
     """
     Build in memory services report for the discovered services
 
@@ -95,32 +91,41 @@ def build_report(services):
     Returns:
         report: A dict report of the discovered services with a summary
     """
-    report = {
+    report: dict[str, Any] = {
+        "tool": "ServScout",
+        "version": "1.0.0",
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "summary": {},
         "services": [],
     }
 
     for service_file in services:
-        data = parse_service_files(service_file)
-        is_valid, missing_fields = validate_services(data=data)
-
         report["summary"]["total_scanned"] = (
             report["summary"].get("total_scanned", 0) + 1
         )
+        data, parse_error = parse_service_files(service_file)
 
-        if is_valid:
-            status = "valid"
-            report["summary"]["total_valid"] = (
-                report["summary"].get("total_valid", 0) + 1
-            )
-        else:
+        if parse_error:
             status = "invalid"
             report["summary"]["total_with_errors"] = (
                 report["summary"].get("total_with_errors", 0) + 1
             )
+            errors = [parse_error]
+        else:
+            is_valid, missing_fields = validate_services(data=data)
 
-        errors = [f"Missing required field {field}" for field in missing_fields]
+            if is_valid:
+                status = "valid"
+                report["summary"]["total_valid"] = (
+                    report["summary"].get("total_valid", 0) + 1
+                )
+            else:
+                status = "invalid"
+                report["summary"]["total_with_errors"] = (
+                    report["summary"].get("total_with_errors", 0) + 1
+                )
+
+            errors = [f"Missing required field {field}" for field in missing_fields]
 
         report["services"].append(
             {
@@ -134,7 +139,7 @@ def build_report(services):
     return report
 
 
-def write_report(report, output_path=Path(".")):
+def write_report(report: dict[str, Any], output_path: Path | None = None) -> None:
     """
     Writes the report to the disk
 
@@ -142,29 +147,59 @@ def write_report(report, output_path=Path(".")):
         report: A dict report of the services
         output_path: The path where the output should be written, defaults to current working director
     """
-    with open(output_path / "report.json", "w") as output_file:
-        json.dump(report, output_file, indent=4)
+    if not output_path:
+        output_path = Path.cwd()
 
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    file_name = f"service_report_{timestamp}.json"
+    file_path = Path(output_path) / file_name
 
-# def traverse(path):
-#     for basepath, directories, files in os.walk(path):
-#         for file in files:
-#             if file.endswith(".yaml"):
-#                 yield os.path.join(basepath, file)
+    try:
+        with open(file_path, "w") as output_file:
+            json.dump(report, output_file, indent=4)
+        print(f"ServScout - Report written to {file_path}", file=sys.stderr)
+    except OSError as e:
+        print(f"ServScout - Failed to write to {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        prog="servscout",
+        description="ServScout — Scouts and inventories all services across the monorepo.",
+    )
+    parser.add_argument(
+        "path", help="Root directory path to scan for service.yaml files"
+    )
+    parser.add_argument(
+        "--out",
+        "-o",
+        help="Output path for the JSON report. Defaults to current working directory.",
+    )
+    args = parser.parse_args()
+
     try:
         services = find_service_files(args.path)
 
     except NotADirectoryError as e:
         print(e)
-        sys.exit(10001)
+        sys.exit(1)
 
     report = build_report(services=services)
-    write_report(report=report)
 
-    print(report)
+    summary = report["summary"]
+
+    print(
+        f"ServScout - Scan complete at '{Path(args.path).resolve()}'", file=sys.stderr
+    )
+    print(f"Total Scanned: {summary.get('total_scanned', 0)}", file=sys.stderr)
+    print(f"Total Valid: {summary.get('total_valid', 0)}", file=sys.stderr)
+    print(f"Total Errors: {summary.get('total_with_errors', 0)}", file=sys.stderr)
+
+    if args.out:
+        write_report(report=report, output_path=args.out)
+    else:
+        write_report(report=report)
 
 
 if __name__ == "__main__":
