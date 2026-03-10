@@ -92,6 +92,8 @@ def build_report(services):
         report: A dict report of the discovered services with a summary
     """
     report = {
+        "tool": "ServScout",
+        "version": "1.0.0",
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "summary": {},
         "services": [],
@@ -146,7 +148,7 @@ def write_report(report: dict[str, Any], output_path: Path | None = None):
     """
     if not output_path:
         output_path = Path.cwd()
-        
+
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     file_name = f"service_report_{timestamp}.json"
     file_path = Path(output_path) / file_name
