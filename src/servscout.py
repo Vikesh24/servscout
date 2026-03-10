@@ -161,14 +161,6 @@ def write_report(report: dict[str, Any], output_path: Path | None = None):
         print(f"ServScout - Failed to write to {e}", file=sys.stderr)
         sys.exit(1)
 
-
-# def traverse(path):
-#     for basepath, directories, files in os.walk(path):
-#         for file in files:
-#             if file.endswith(".yaml"):
-#                 yield os.path.join(basepath, file)
-
-
 def main():
 
     parser = argparse.ArgumentParser(
@@ -194,12 +186,19 @@ def main():
 
     report = build_report(services=services)
 
+    summary = report["summary"]
+
+    print(f"ServScout - Scan complete at '{Path(args.path).resolve()}'", file=sys.stderr)
+    print(f"Total Scanned: {summary.get("total_scanned", 0)}", file=sys.stderr)
+    print(f"Total Valid: {summary.get("total_valid", 0)}", file=sys.stderr)
+    print(f"Total Errors: {summary.get("total_errors", 0)}", file=sys.stderr)
+
     if args.out:
         write_report(report=report, output_path=args.out)
     else:
         write_report(report=report)
 
-    print(report, file=sys.stderr)
+    
 
 
 if __name__ == "__main__":
