@@ -164,7 +164,6 @@ def write_report(report: dict[str, Any], output_path: Path | None = None) -> Non
 
 
 def main():
-
     parser = argparse.ArgumentParser(
         prog="servscout",
         description="ServScout — Scouts and inventories all services across the monorepo.",
@@ -193,9 +192,9 @@ def main():
     print(
         f"ServScout - Scan complete at '{Path(args.path).resolve()}'", file=sys.stderr
     )
-    print(f"Total Scanned: {summary.get("total_scanned", 0)}", file=sys.stderr)
-    print(f"Total Valid: {summary.get("total_valid", 0)}", file=sys.stderr)
-    print(f"Total Errors: {summary.get("total_with_errors", 0)}", file=sys.stderr)
+    print(f"Total Scanned: {summary.get('total_scanned', 0)}", file=sys.stderr)
+    print(f"Total Valid: {summary.get('total_valid', 0)}", file=sys.stderr)
+    print(f"Total Errors: {summary.get('total_with_errors', 0)}", file=sys.stderr)
 
     if args.out:
         write_report(report=report, output_path=args.out)
