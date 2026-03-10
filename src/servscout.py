@@ -11,13 +11,13 @@ from datetime import datetime, timezone
 
 # import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Generator
 import yaml
 
 REQUIRED_FIELDS = ["name", "team", "language", "version"]
 
 
-def find_service_files(root_directory: str):
+def find_service_files(root_directory: str) -> Generator[Path]:
     """
     Recursively scan a directory and yield all service.yaml file paths.
 
@@ -37,7 +37,7 @@ def find_service_files(root_directory: str):
         )
 
 
-def parse_service_files(file: Path):
+def parse_service_files(file: Path) -> tuple[dict[str, Any]|None, None|str]:
     """
     Reads and Parses the service.yaml file
 
@@ -55,7 +55,7 @@ def parse_service_files(file: Path):
         return (None, f"Invalid YAML syntax: {e}")
 
 
-def validate_services(data: dict[str, Any]):
+def validate_services(data: dict[str, Any]|None) -> tuple[bool, list[str]]:
     """
     Validates the given parsed data
 
@@ -82,7 +82,7 @@ def validate_services(data: dict[str, Any]):
     return (is_valid, missing_fields)
 
 
-def build_report(services):
+def build_report(services: Generator[Path, None, None]) -> dict[str, Any]:
     """
     Build in memory services report for the discovered services
 
@@ -91,7 +91,7 @@ def build_report(services):
     Returns:
         report: A dict report of the discovered services with a summary
     """
-    report = {
+    report: dict[str, Any] = {
         "tool": "ServScout",
         "version": "1.0.0",
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -104,12 +104,13 @@ def build_report(services):
             report["summary"].get("total_scanned", 0) + 1
         )
         data, parse_error = parse_service_files(service_file)
+
         if parse_error:
             status = "invalid"
             report["summary"]["total_with_errors"] = (
                 report["summary"].get("total_with_errors", 0) + 1
             )
-            errors = parse_error
+            errors = [parse_error]
         else:
             is_valid, missing_fields = validate_services(data=data)
 
@@ -138,7 +139,7 @@ def build_report(services):
     return report
 
 
-def write_report(report: dict[str, Any], output_path: Path | None = None):
+def write_report(report: dict[str, Any], output_path: Path | None = None) -> None:
     """
     Writes the report to the disk
 
@@ -197,8 +198,6 @@ def main():
         write_report(report=report, output_path=args.out)
     else:
         write_report(report=report)
-
-    
 
 
 if __name__ == "__main__":
