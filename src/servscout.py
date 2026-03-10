@@ -136,7 +136,7 @@ def build_report(services):
     return report
 
 
-def write_report(report, output_path=Path(".")):
+def write_report(report: dict[str, Any], output_path: Path | None = None):
     """
     Writes the report to the disk
 
@@ -144,9 +144,12 @@ def write_report(report, output_path=Path(".")):
         report: A dict report of the services
         output_path: The path where the output should be written, defaults to current working director
     """
+    if not output_path:
+        output_path = Path.cwd()
+        
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     file_name = f"service_report_{timestamp}.json"
-    file_path = output_path / file_name
+    file_path = Path(output_path) / file_name
 
     try:
         with open(file_path, "w") as output_file:
@@ -188,7 +191,11 @@ def main():
         sys.exit(1)
 
     report = build_report(services=services)
-    write_report(report=report)
+
+    if args.out:
+        write_report(report=report, output_path=args.out)
+    else:
+        write_report(report=report)
 
     print(report, file=sys.stderr)
 
