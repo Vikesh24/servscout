@@ -17,7 +17,7 @@ import yaml
 REQUIRED_FIELDS = ["name", "team", "language", "version"]
 
 
-def find_service_files(root_directory: str) -> Generator[Path]:
+def find_service_files(root_directory: str) -> Generator[Path, None, None]:
     """
     Recursively scan a directory and yield all service.yaml file paths.
 
@@ -195,7 +195,7 @@ def main():
     )
     print(f"Total Scanned: {summary.get("total_scanned", 0)}", file=sys.stderr)
     print(f"Total Valid: {summary.get("total_valid", 0)}", file=sys.stderr)
-    print(f"Total Errors: {summary.get("total_errors", 0)}", file=sys.stderr)
+    print(f"Total Errors: {summary.get("total_with_errors", 0)}", file=sys.stderr)
 
     if args.out:
         write_report(report=report, output_path=args.out)
