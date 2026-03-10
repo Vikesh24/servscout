@@ -37,7 +37,7 @@ def find_service_files(root_directory: str) -> Generator[Path]:
         )
 
 
-def parse_service_files(file: Path) -> tuple[dict[str, Any]|None, None|str]:
+def parse_service_files(file: Path) -> tuple[dict[str, Any] | None, None | str]:
     """
     Reads and Parses the service.yaml file
 
@@ -48,14 +48,14 @@ def parse_service_files(file: Path) -> tuple[dict[str, Any]|None, None|str]:
         The parsed data from the YAML
     """
     try:
-        with open(file.as_posix(), "r") as f:
+        with open(file, "r") as f:
             data = yaml.safe_load(f)
             return data, None
     except yaml.YAMLError as e:
         return (None, f"Invalid YAML syntax: {e}")
 
 
-def validate_services(data: dict[str, Any]|None) -> tuple[bool, list[str]]:
+def validate_services(data: dict[str, Any] | None) -> tuple[bool, list[str]]:
     """
     Validates the given parsed data
 
@@ -162,6 +162,7 @@ def write_report(report: dict[str, Any], output_path: Path | None = None) -> Non
         print(f"ServScout - Failed to write to {e}", file=sys.stderr)
         sys.exit(1)
 
+
 def main():
 
     parser = argparse.ArgumentParser(
@@ -189,7 +190,9 @@ def main():
 
     summary = report["summary"]
 
-    print(f"ServScout - Scan complete at '{Path(args.path).resolve()}'", file=sys.stderr)
+    print(
+        f"ServScout - Scan complete at '{Path(args.path).resolve()}'", file=sys.stderr
+    )
     print(f"Total Scanned: {summary.get("total_scanned", 0)}", file=sys.stderr)
     print(f"Total Valid: {summary.get("total_valid", 0)}", file=sys.stderr)
     print(f"Total Errors: {summary.get("total_errors", 0)}", file=sys.stderr)
