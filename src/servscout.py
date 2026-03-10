@@ -98,6 +98,9 @@ def build_report(services):
     }
 
     for service_file in services:
+        report["summary"]["total_scanned"] = (
+            report["summary"].get("total_scanned", 0) + 1
+        )
         data, parse_error = parse_service_files(service_file)
         if parse_error:
             status = "invalid"
@@ -107,10 +110,6 @@ def build_report(services):
             errors = parse_error
         else:
             is_valid, missing_fields = validate_services(data=data)
-
-            report["summary"]["total_scanned"] = (
-                report["summary"].get("total_scanned", 0) + 1
-            )
 
             if is_valid:
                 status = "valid"
